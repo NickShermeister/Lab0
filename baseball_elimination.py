@@ -11,6 +11,7 @@ import networkx as nx
 import itertools
 import cvxopt
 import matplotlib.pyplot as plt
+from time import sleep
 
 SOURCE = "s"
 SINK = "t"
@@ -74,8 +75,9 @@ class Division:
         """
         return self.teams.keys()
 
+
     def is_eliminated(self, teamID, solver):
-        """Uses the given solver (either Linear Programming or Network Flows)
+        '''Uses the given solver (either Linear Programming or Network Flows)
         to determine if the team with the given ID is mathematically
         eliminated from winning the division (aka winning more games than any
         other team) this season.
@@ -84,7 +86,7 @@ class Division:
         solver: string representing whether to use the network flows or linear
         programming solver
         return: True if eliminated, False otherwise
-        """
+        '''
         flag1 = False
         team = self.teams[teamID]
 
@@ -101,11 +103,11 @@ class Division:
                 flag1 = self.network_flows(saturated_edges)
             elif solver == "Linear Programming":
                 flag1 = self.linear_programming(teamID, saturated_edges)
-
         return flag1
 
+
     def create_network(self, teamID):
-        """Builds up the network needed for solving the baseball elimination
+        '''Builds up the network needed for solving the baseball elimination
         problem as a network flows problem & stores it in self.G. Returns a
         dictionary of saturated edges that maps team pairs to the amount of
         additional games they have against each other.
@@ -114,16 +116,13 @@ class Division:
 
         return: dictionary of saturated edges that maps team pairs to
         the amount of additional games they have against each other
-        """
-        # set up the graph to run the max flow algorithm on
-        self.G = (
-            nx.DiGraph()
-        )  # wHY IS THIS BEING CALLED TWICE?! @people who wrote test bench
-        self.total_cap = 0
-
+        '''
+        self.G = nx.DiGraph()
         saturated_edges = {}
         ids = list(self.get_team_IDs())
         ids.remove(teamID)
+        self.already_lost = False
+        self.teamID = teamID
 
         hypo_win = self.teams[teamID].wins + self.teams[teamID].remaining
 
@@ -131,47 +130,25 @@ class Division:
 
         for index, id in enumerate(ids):
             actual_remaining = hypo_win - self.teams[id].wins
+
             if actual_remaining < 0:
                 self.already_lost = True
-            all_edges.append(
-                (self.teams[id].name, SINK, {"capacity": actual_remaining, "flow": 0})
-            )
+
+            all_edges.append((self.teams[id].name, SINK, {'capacity': actual_remaining, 'flow' : 0}))
             for index2, opponent in enumerate(ids):
                 if index2 > index:
-                    # print(f"index2: {index2}, index: {index}")
                     num = self.teams[id].get_against(opponent)
-                    all_edges.append(
-                        (
-                            SOURCE,
-                            str(id) + "_" + str(opponent),
-                            {"capacity": num, "flow": 0},
-                        )
-                    )
-                    self.total_cap += num
-                    # print(self.total_cap)
-                    all_edges.append(
-                        (
-                            str(id) + "_" + str(opponent),
-                            self.teams[id].name,
-                            {"capacity": num, "flow": 0},
-                        )
-                    )
-                    all_edges.append(
-                        (
-                            str(id) + "_" + str(opponent),
-                            self.teams[opponent].name,
-                            {"capacity": num, "flow": 0},
-                        )
-                    )
+                    all_edges.append((SOURCE, str(id) + "_" + str(opponent), {'capacity': num, 'flow' : 0}))
+                    all_edges.append((str(id) + "_" + str(opponent), self.teams[id].name, {'capacity': num, 'flow' : 0}))
+                    all_edges.append((str(id) + "_" + str(opponent), self.teams[opponent].name, {'capacity': num, 'flow' : 0}))
                     saturated_edges[(id, opponent)] = num
 
         self.G.add_edges_from(all_edges)
 
-        # print(saturated_edges)
         return saturated_edges
 
     def network_flows(self, saturated_edges):
-        """Uses network flows to determine if the team with given team ID
+        '''Uses network flows to determine if the team with given team ID
         has been eliminated. You can feel free to use the built in networkx
         maximum flow function or the maximum flow function you implemented as
         part of the in class implementation activity.
@@ -179,21 +156,14 @@ class Division:
         saturated_edges: dictionary of saturated edges that maps team pairs to
         the amount of additional games they have against each other
         return: True if team is eliminated, False otherwise
-        """
+        '''
         # Nek
 
-        # TODO: implement this
-
         # step 1 -- flow through the graph
-        flow_value, flow_dict = nx.maximum_flow(
-            self.G, SOURCE, SINK, capacity="capacity"
-        )
+        flow_value, flow_dict = nx.maximum_flow(self.G, SOURCE, SINK, capacity='capacity')
 
-        # print(flow_value)
-        # print("hi")
-        # print(flow_dict)
-        # self.draw_graph()
-        if self.total_cap > flow_value or self.already_lost:
+        total_cap = sum([x for y,x in saturated_edges.items()])
+        if total_cap > flow_value or self.already_lost:
             return True
         else:
             return False
