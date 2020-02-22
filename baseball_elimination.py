@@ -31,8 +31,6 @@ class Division:
         self.teams = {}
         self.G = nx.DiGraph()
         self.readDivision(filename)
-        self.total_cap = 0
-        self.already_lost = False
 
     def draw_graph(self):
         """Draws a nice representation of a networkx graph object.
@@ -117,25 +115,32 @@ class Division:
         return: dictionary of saturated edges that maps team pairs to
         the amount of additional games they have against each other
         '''
+        # (re)Set the basic variables
         self.G = nx.DiGraph()
         saturated_edges = {}
+
+
+        #Get the list of nodes we care about for the network
         ids = list(self.get_team_IDs())
-        ids.remove(teamID)
-        self.already_lost = False
+        ids.remove(teamID) #Removing our ID from the initial list
+
+        # Set up any useful variables
+        all_edges = []
         self.teamID = teamID
 
+        # Get the hypothetical maximum wins for the person we care about
         hypo_win = self.teams[teamID].wins + self.teams[teamID].remaining
 
-        all_edges = []
-
+        # Iterate through all nodes
         for index, id in enumerate(ids):
+
+            #Get the number of remaining wins a person can get before making winning impossible for our desired team
             actual_remaining = hypo_win - self.teams[id].wins
-
-            if actual_remaining < 0:
-                self.already_lost = True
-
             all_edges.append((self.teams[id].name, SINK, {'capacity': actual_remaining, 'flow' : 0}))
+
+            # Iterate through all opponents
             for index2, opponent in enumerate(ids):
+                # Making sure there are no repeats, iterate through all opponents to add the appropriate edges with capacities
                 if index2 > index:
                     num = self.teams[id].get_against(opponent)
                     all_edges.append((SOURCE, str(id) + "_" + str(opponent), {'capacity': num, 'flow' : 0}))
@@ -157,18 +162,17 @@ class Division:
         the amount of additional games they have against each other
         return: True if team is eliminated, False otherwise
         '''
-        # Nek
-
         # step 1 -- flow through the graph
         flow_value, flow_dict = nx.maximum_flow(self.G, SOURCE, SINK, capacity='capacity')
 
+        # Step 2: get how much flow should go through optimally
         total_cap = sum([x for y,x in saturated_edges.items()])
-        if total_cap > flow_value or self.already_lost:
+
+        # Step 3: see if the right amount of flow is going through the system
+        if total_cap > flow_value:
             return True
         else:
             return False
-
-        # step 2 -- check if all flow from source is used
 
     def linear_programming(self, teamID, saturated_edges):
         """Uses linear programming to determine if the team with given team ID

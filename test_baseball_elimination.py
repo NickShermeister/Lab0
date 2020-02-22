@@ -107,38 +107,6 @@ def test_teams24():
     """
     division = Division("teams24.txt")
     for (ID, team) in division.teams.items():
-# <<<<<<< HEAD
-        # if (
-        #     team.name == "Team4"
-        #     or team.name == "Team5"
-        #     or team.name == "Team7"
-        #     or team.name == "Team9"
-        #     or team.name == "Team11"
-        #     or team.name == "Team12"
-        #     or team.name == "Team16"
-        #     or team.name == "Team19"
-        #     or team.name == "Team23"
-        # ):
-        #     assert_eliminated(division, team)
-        # elif (
-        #     team.name == "Team0"
-        #     or team.name == "Team1"
-        #     or team.name == "Team2"
-        #     or team.name == "Team3"
-        #     or team.name == "Team6"
-        #     or team.name == "Team8"
-        #     or team.name == "Team10"
-        #     or team.name == "Team13"
-        #     or team.name == "Team14"
-        #     or team.name == "Team15"
-        #     or team.name == "Team16"
-        #     or team.name == "Team17"
-        #     or team.name == "Team18"
-        #     or team.name == "Team20"
-        #     or team.name == "Team21"
-        #     or team.name == "Team22"
-        # ):
-# =======
         if (team.name == "Team4" or team.name == "Team5" or team.name == "Team7"
             or team.name == "Team9" or team.name == "Team11" or team.name == "Team12" or team.name == "Team13"
             or team.name == "Team16" or team.name == "Team19" or team.name == "Team23"):
@@ -149,7 +117,6 @@ def test_teams24():
             or team.name == "Team15" or team.name == "Team16" or team.name == "Team17"
             or team.name == "Team18" or team.name == "Team20" or team.name == "Team21"
             or team.name == "Team22"):
-# >>>>>>> 45081526412945488871ccce289fb624360a3f70
             assert_not_eliminated(division, team)
     print("test_teams24 completed")
 
