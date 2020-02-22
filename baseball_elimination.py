@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """Code file for baseball elimination lab created for Advanced Algorithms
 Spring 2020 at Olin College. The code for this lab has been adapted from:
 https://github.com/ananya77041/baseball-elimination/blob/master/src/BaseballElimination.java"""
@@ -126,15 +128,63 @@ class Division:
         Do not use the flow_constraint method that Picos provides (it does all of the work for you)
         We want you to set up the constraint equations using picos (hint: add_constraint is the method you want)
 
+        In this function, we use "Emily" to refer to the team that we're checking out (teamID)
+
         teamID: ID of team that we want to check if it is eliminated
         saturated_edges: dictionary of saturated edges that maps team pairs to
         the amount of additional games they have against each other
         returns True if team is eliminated, False otherwise
         """
 
-        maxflow = pic.Problem()
+        other_teams = [team for team in self.get_team_IDs if team != teamID]
 
-        # TODO: implement this
+        # The maximum number of points that Emily could have at the end
+        e_max_points = self.teams[teamID].wins + self.teams[teamID].remaining
+
+        # How many points a team can win before it passes Emily
+
+        p = pic.Problem()
+
+        t = p.add_variable("t", 1, vtype="integer")  # The thing we're optimizing
+
+        # Left-hand edges
+        g, g_lim = {}, {}
+        for pair in saturated_edges:
+            g[pair] = p.add_variable(f"g_{pair}", 1, vtype="integer")
+            g_lim[pair] = p.add_constraint(g[pair] <= saturated_edges[pair])
+
+        # Right-hand edges
+        f, f_lim = {}, {}
+        for team in other_teams:
+            f[team] = p.add_variable(f"f_{team}", 1, vtype="integer")
+            f_lim[team] = p.add_constraint(
+                f[team] <= e_max_points - self.teams[team].wins
+            )
+
+        # Center edges and left-hand node constraints
+        c, left_lim = {}, {}
+        for pair in saturated_edges:
+            c[pair, pair[0]] = p.add_variable(
+                f"c_{(pair, pair[0])}", 1, vtype="integer"
+            )
+            c[pair, pair[1]] = p.add_variable(
+                f"c_{(pair, pair[1])}", 1, vtype="integer"
+            )
+
+            left_lim[pair] = p.add_constraint(
+                g[pair] == c[pair, pair[0]] + c[pair, pair[1]]
+            )
+
+        # Right-hand node constraints
+        right_lim = {}
+        for team in other_teams:
+            inputs = [val for key, val in c if val[1] == team]
+            assert len(inputs) == 2
+
+            right_lim[team] =  = p.add_constraint(
+                f[team] == inputs[0] + inputs[1]
+            )
+
 
         return False
 
