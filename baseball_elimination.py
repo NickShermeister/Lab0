@@ -215,8 +215,6 @@ class Division:
         returns True if team is eliminated, False otherwise
         """
 
-        print(f"Team ID: {teamID}\tSaturated edges: {saturated_edges}")
-
         other_teams = [team for team in self.get_team_IDs() if team != teamID]
 
         # The maximum number of points that Emily could have at the end
@@ -261,10 +259,15 @@ class Division:
 
             right_lim[team] = p.add_constraint(f[team] == sum(inputs))
 
-        t = p.add_variable("t", 1, vtype="integer")  # The thing we're optimizing
+        # Add the thing we're optimizing
+        t = p.add_variable("t", 1, vtype="integer")
         t_lim = p.add_constraint(t == sum(f.values()))
+        p.set_objective("max", t)
 
-        return False
+        soln = p.solve(verbose=False)
+        p_val = round(p.obj_value())
+
+        return p_val < sum(saturated_edges.values())
 
     def checkTeam(self, team):
         """Checks that the team actually exists in this division.
