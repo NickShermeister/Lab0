@@ -85,7 +85,7 @@ class Division:
             if solver == "Network Flows":
                 flag1 = self.network_flows(saturated_edges)
             elif solver == "Linear Programming":
-                flag1 = self.linear_programming(saturated_edges)
+                flag1 = self.linear_programming(teamID, saturated_edges)
 
         return flag1
 
@@ -136,7 +136,9 @@ class Division:
         returns True if team is eliminated, False otherwise
         """
 
-        other_teams = [team for team in self.get_team_IDs if team != teamID]
+        print(f"Team ID: {teamID}\tSaturated edges: {saturated_edges}")
+
+        other_teams = [team for team in self.get_team_IDs() if team != teamID]
 
         # The maximum number of points that Emily could have at the end
         e_max_points = self.teams[teamID].wins + self.teams[teamID].remaining
@@ -144,8 +146,6 @@ class Division:
         # How many points a team can win before it passes Emily
 
         p = pic.Problem()
-
-        t = p.add_variable("t", 1, vtype="integer")  # The thing we're optimizing
 
         # Left-hand edges
         g, g_lim = {}, {}
@@ -175,16 +175,21 @@ class Division:
                 g[pair] == c[pair, pair[0]] + c[pair, pair[1]]
             )
 
+        print(c)
+
         # Right-hand node constraints
         right_lim = {}
         for team in other_teams:
             inputs = [val for key, val in c if val[1] == team]
+
+            print(inputs)
+
             assert len(inputs) == 2
 
-            right_lim[team] =  = p.add_constraint(
-                f[team] == inputs[0] + inputs[1]
-            )
+            right_lim[team] = p.add_constraint(f[team] == inputs[0] + inputs[1])
 
+        t = p.add_variable("t", 1, vtype="integer")  # The thing we're optimizing
+        t_lim = p.add_constraint(t == sum(f.values()))
 
         return False
 
