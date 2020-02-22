@@ -143,7 +143,7 @@ def test_teams24():
 
 if __name__ == "__main__":
     test_teams2()
-    # test_teams4()
-    # test_teams7()
+    test_teams4()
+    test_teams7()
     # test_teams24()
     print("All tests have completed.")

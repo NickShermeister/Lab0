@@ -138,7 +138,7 @@ class Division:
             )
             for index2, opponent in enumerate(ids):
                 if index2 > index:
-                    print(f"index2: {index2}, index: {index}")
+                    # print(f"index2: {index2}, index: {index}")
                     num = self.teams[id].get_against(opponent)
                     all_edges.append(
                         (
@@ -148,7 +148,7 @@ class Division:
                         )
                     )
                     self.total_cap += num
-                    print(self.total_cap)
+                    # print(self.total_cap)
                     all_edges.append(
                         (
                             str(id) + "_" + str(opponent),
@@ -228,12 +228,14 @@ class Division:
         g, g_lim = {}, {}
         for pair in saturated_edges:
             g[pair] = p.add_variable(f"g_{pair}", 1, vtype="integer")
+            p.add_constraint(0 <= g[pair])
             g_lim[pair] = p.add_constraint(g[pair] <= saturated_edges[pair])
 
         # Right-hand edges
         f, f_lim = {}, {}
         for team in other_teams:
             f[team] = p.add_variable(f"f_{team}", 1, vtype="integer")
+            p.add_constraint(0 <= f[team])
             f_lim[team] = p.add_constraint(
                 f[team] <= e_max_points - self.teams[team].wins
             )
@@ -244,9 +246,12 @@ class Division:
             c[(pair, pair[0])] = p.add_variable(
                 f"c_{(pair, pair[0])}", 1, vtype="integer"
             )
+            p.add_constraint(0 <= c[(pair, pair[0])])
+
             c[(pair, pair[1])] = p.add_variable(
                 f"c_{(pair, pair[1])}", 1, vtype="integer"
             )
+            p.add_constraint(0 <= c[(pair, pair[1])])
 
             left_lim[pair] = p.add_constraint(
                 g[pair] == c[pair, pair[0]] + c[pair, pair[1]]
