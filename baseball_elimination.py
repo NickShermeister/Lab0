@@ -10,6 +10,10 @@ import picos as pic
 import networkx as nx
 import itertools
 import cvxopt
+import matplotlib.pyplot as plt
+
+SOURCE = "s"
+SINK = "t"
 
 
 class Division:
@@ -26,6 +30,17 @@ class Division:
         self.teams = {}
         self.G = nx.DiGraph()
         self.readDivision(filename)
+        self.total_cap = 0
+        self.already_lost = False
+
+    def draw_graph(self):
+        """Draws a nice representation of a networkx graph object.
+        Source: https://notebooks.azure.com/coells/projects/100days/html/day%2049%20-%20ford-fulkerson.ipynb"""
+        graph = self.G
+        plt.figure(figsize=(12, 4))
+        plt.axis("off")
+        nx.draw_networkx(graph, node_color="steelblue", node_size=600)
+        plt.show()
 
     def readDivision(self, filename):
         """Reads the information from the given file and builds up a dictionary
@@ -96,14 +111,63 @@ class Division:
         additional games they have against each other.
 
         teamID: ID of team that we want to check if it is eliminated
+
         return: dictionary of saturated edges that maps team pairs to
         the amount of additional games they have against each other
         """
+        # set up the graph to run the max flow algorithm on
+        self.G = (
+            nx.DiGraph()
+        )  # wHY IS THIS BEING CALLED TWICE?! @people who wrote test bench
+        self.total_cap = 0
 
         saturated_edges = {}
+        ids = list(self.get_team_IDs())
+        ids.remove(teamID)
 
-        # TODO: implement this
+        hypo_win = self.teams[teamID].wins + self.teams[teamID].remaining
 
+        all_edges = []
+
+        for index, id in enumerate(ids):
+            actual_remaining = hypo_win - self.teams[id].wins
+            if actual_remaining < 0:
+                self.already_lost = True
+            all_edges.append(
+                (self.teams[id].name, SINK, {"capacity": actual_remaining, "flow": 0})
+            )
+            for index2, opponent in enumerate(ids):
+                if index2 > index:
+                    print(f"index2: {index2}, index: {index}")
+                    num = self.teams[id].get_against(opponent)
+                    all_edges.append(
+                        (
+                            SOURCE,
+                            str(id) + "_" + str(opponent),
+                            {"capacity": num, "flow": 0},
+                        )
+                    )
+                    self.total_cap += num
+                    print(self.total_cap)
+                    all_edges.append(
+                        (
+                            str(id) + "_" + str(opponent),
+                            self.teams[id].name,
+                            {"capacity": num, "flow": 0},
+                        )
+                    )
+                    all_edges.append(
+                        (
+                            str(id) + "_" + str(opponent),
+                            self.teams[opponent].name,
+                            {"capacity": num, "flow": 0},
+                        )
+                    )
+                    saturated_edges[(id, opponent)] = num
+
+        self.G.add_edges_from(all_edges)
+
+        # print(saturated_edges)
         return saturated_edges
 
     def network_flows(self, saturated_edges):
@@ -116,10 +180,25 @@ class Division:
         the amount of additional games they have against each other
         return: True if team is eliminated, False otherwise
         """
+        # Nek
 
         # TODO: implement this
 
-        return False
+        # step 1 -- flow through the graph
+        flow_value, flow_dict = nx.maximum_flow(
+            self.G, SOURCE, SINK, capacity="capacity"
+        )
+
+        # print(flow_value)
+        # print("hi")
+        # print(flow_dict)
+        # self.draw_graph()
+        if self.total_cap > flow_value or self.already_lost:
+            return True
+        else:
+            return False
+
+        # step 2 -- check if all flow from source is used
 
     def linear_programming(self, teamID, saturated_edges):
         """Uses linear programming to determine if the team with given team ID
