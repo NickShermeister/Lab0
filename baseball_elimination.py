@@ -243,10 +243,10 @@ class Division:
         # Center edges and left-hand node constraints
         c, left_lim = {}, {}
         for pair in saturated_edges:
-            c[pair, pair[0]] = p.add_variable(
+            c[(pair, pair[0])] = p.add_variable(
                 f"c_{(pair, pair[0])}", 1, vtype="integer"
             )
-            c[pair, pair[1]] = p.add_variable(
+            c[(pair, pair[1])] = p.add_variable(
                 f"c_{(pair, pair[1])}", 1, vtype="integer"
             )
 
@@ -254,18 +254,12 @@ class Division:
                 g[pair] == c[pair, pair[0]] + c[pair, pair[1]]
             )
 
-        print(c)
-
         # Right-hand node constraints
         right_lim = {}
         for team in other_teams:
-            inputs = [val for key, val in c if val[1] == team]
+            inputs = [c[key] for key in c if key[1] == team]
 
-            print(inputs)
-
-            assert len(inputs) == 2
-
-            right_lim[team] = p.add_constraint(f[team] == inputs[0] + inputs[1])
+            right_lim[team] = p.add_constraint(f[team] == sum(inputs))
 
         t = p.add_variable("t", 1, vtype="integer")  # The thing we're optimizing
         t_lim = p.add_constraint(t == sum(f.values()))
